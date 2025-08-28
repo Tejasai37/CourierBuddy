@@ -20,7 +20,7 @@ app.secret_key = os.getenv('SECRET_KEY', 'change-this-in-production')
 AWS_REGION = 'us-east-1'
 USERS_TABLE = 'courierbuddy_users'
 PARCELS_TABLE = 'courierbuddy_parcels'
-SNS_TOPIC_ARN = os.getenv('SNS_TOPIC_ARN')
+SNS_TOPIC_ARN = 'arn:aws:sns:us-east-1:604665149129:courier_buddy_topic'
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -253,3 +253,4 @@ def logout():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
