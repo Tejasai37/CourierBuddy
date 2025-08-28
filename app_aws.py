@@ -173,20 +173,101 @@ def index():
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        data = request.form
-        email = data.get('email')
-        password = data.get('password')
-        name = data.get('name')
-        phone = data.get('phone')
-        address = data.get('address')
-        role = data.get('role')
-        # Add validation...
-        if create_user(email, password, name, phone, address, role):
-            send_notification(f"New user registered: {email} ({role})")
-            flash('Account created successfully! Please log in.', 'success')
-            return redirect(url_for('login'))
-        else:
-            flash('Email already exists!', 'error')
+        try:
+            # Handle both JSON and form data
+            if request.is_json:
+                data = request.get_json()
+            else:
+                data = request.form
+            
+            # Extract and validate data with defaults
+            email = data.get('email', '').strip() if data.get('email') else ''
+            password = data.get('password', '').strip() if data.get('password') else ''
+            name = data.get('name', '').strip() if data.get('name') else ''
+            phone = data.get('phone', '').strip() if data.get('phone') else ''
+            address = data.get('address', '').strip() if data.get('address') else ''
+            role = data.get('role', '').strip() if data.get('role') else ''
+            
+            # Validation - check for empty values
+            if not email:
+                error_msg = 'Email is required.'
+                if request.is_json:
+                    return jsonify({'success': False, 'message': error_msg}), 400
+                flash(error_msg, 'error')
+                return render_template('signup.html')
+            
+            if not password:
+                error_msg = 'Password is required.'
+                if request.is_json:
+                    return jsonify({'success': False, 'message': error_msg}), 400
+                flash(error_msg, 'error')
+                return render_template('signup.html')
+            
+            if not name:
+                error_msg = 'Name is required.'
+                if request.is_json:
+                    return jsonify({'success': False, 'message': error_msg}), 400
+                flash(error_msg, 'error')
+                return render_template('signup.html')
+            
+            if not role:
+                error_msg = 'Role is required.'
+                if request.is_json:
+                    return jsonify({'success': False, 'message': error_msg}), 400
+                flash(error_msg, 'error')
+                return render_template('signup.html')
+            
+            if len(password) < 6:
+                error_msg = 'Password must be at least 6 characters long.'
+                if request.is_json:
+                    return jsonify({'success': False, 'message': error_msg}), 400
+                flash(error_msg, 'error')
+                return render_template('signup.html')
+            
+            if role not in ['user', 'courier', 'admin']:
+                error_msg = 'Please select a valid user type.'
+                if request.is_json:
+                    return jsonify({'success': False, 'message': error_msg}), 400
+                flash(error_msg, 'error')
+                return render_template('signup.html')
+            
+            # Check if user already exists
+            if get_user_by_email(email) or get_delivery_agent_by_email(email):
+                error_msg = 'Email already exists. Please choose a different one.'
+                if request.is_json:
+                    return jsonify({'success': False, 'message': error_msg}), 400
+                flash(error_msg, 'error')
+                return render_template('signup.html')
+            
+            # Create user
+            success = False
+            if role == 'courier':
+                success = create_delivery_agent(email, password, name, phone)
+            else:
+                success = create_user(email, password, name, phone, address, role)
+            
+            if success:
+                send_notification(f"New user registered: {email} ({role})", "New User Registration")
+                success_msg = 'Account created successfully! Please sign in.'
+                if request.is_json:
+                    return jsonify({'success': True, 'message': success_msg})
+                flash(success_msg, 'success')
+                return redirect(url_for('login'))
+            else:
+                error_msg = 'Failed to create account. Please try again.'
+                if request.is_json:
+                    return jsonify({'success': False, 'message': error_msg}), 500
+                flash(error_msg, 'error')
+                return render_template('signup.html')
+                
+        except Exception as e:
+            logger.error(f"Signup error: {e}")
+            error_msg = 'An error occurred during signup. Please try again.'
+            if request.is_json:
+                return jsonify({'success': False, 'message': error_msg}), 500
+            flash(error_msg, 'error')
+            return render_template('signup.html')
+    
     return render_template('signup.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -253,4 +334,5 @@ def logout():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
