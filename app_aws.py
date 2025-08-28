@@ -428,19 +428,13 @@ def login():
             # Handle both JSON and form data
             if request.is_json:
                 data = request.get_json()
-                logger.info(f"Received JSON login data: {data}")
             else:
                 data = request.form
-                logger.info(f"Received form login data: {dict(data)}")
             
-            # Extract and validate email/password with None checking
             email = data.get('email') if data else None
             password = data.get('password') if data else None
             
-            # Log what we received (for debugging)
-            logger.info(f"Login attempt - email: {email}, password: {'***' if password else 'None'}")
-            
-            # Validate email is not None/empty
+            # Validate inputs
             if not email or str(email).strip() == '':
                 error_msg = 'Please enter your email address.'
                 if request.is_json:
@@ -448,7 +442,6 @@ def login():
                 flash(error_msg, 'error')
                 return render_template('login.html')
             
-            # Validate password is not None/empty
             if not password or str(password).strip() == '':
                 error_msg = 'Please enter your password.'
                 if request.is_json:
@@ -456,7 +449,7 @@ def login():
                 flash(error_msg, 'error')
                 return render_template('login.html')
             
-            # Clean the email
+            # Clean inputs
             email = str(email).strip().lower()
             password = str(password).strip()
             
@@ -467,13 +460,35 @@ def login():
                 session['role'] = user['role']
                 session['name'] = user['name']
                 
+                logger.info(f"User login successful: {email}, role: {user['role']}")
+                
                 success_msg = f'Welcome back, {user["name"]}!'
                 
                 if request.is_json:
-                    return jsonify({'success': True, 'role': user['role'], 'message': success_msg})
+                    # For AJAX requests, return success with redirect URL
+                    if user['role'] == 'admin':
+                        redirect_url = '/admin_dashboard'
+                    elif user['role'] == 'user':
+                        redirect_url = '/user_dashboard'
+                    else:
+                        redirect_url = '/dashboard'
+                    
+                    return jsonify({
+                        'success': True, 
+                        'role': user['role'], 
+                        'message': success_msg,
+                        'redirect_url': redirect_url
+                    })
                 
                 flash(success_msg, 'success')
-                return redirect(url_for('dashboard'))
+                
+                # Direct redirect based on role
+                if user['role'] == 'admin':
+                    return redirect(url_for('admin_dashboard'))
+                elif user['role'] == 'user':
+                    return redirect(url_for('user_dashboard'))
+                else:
+                    return redirect(url_for('dashboard'))
             
             # Check in delivery agents table
             agent = get_delivery_agent_by_email(email)
@@ -482,13 +497,20 @@ def login():
                 session['role'] = 'courier'
                 session['name'] = agent['name']
                 
+                logger.info(f"Agent login successful: {email}")
+                
                 success_msg = f'Welcome back, {agent["name"]}!'
                 
                 if request.is_json:
-                    return jsonify({'success': True, 'role': 'courier', 'message': success_msg})
+                    return jsonify({
+                        'success': True, 
+                        'role': 'courier', 
+                        'message': success_msg,
+                        'redirect_url': '/courier_dashboard'
+                    })
                 
                 flash(success_msg, 'success')
-                return redirect(url_for('dashboard'))
+                return redirect(url_for('courier_dashboard'))
             
             # Login failed
             error_msg = 'Invalid email or password.'
@@ -506,7 +528,6 @@ def login():
             return render_template('login.html')
     
     return render_template('login.html')
-
 @app.route('/dashboard')
 def dashboard():
     # Implement role-based dashboard rendering
@@ -554,6 +575,7 @@ def logout():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
 
 
