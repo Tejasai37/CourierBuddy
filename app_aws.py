@@ -88,15 +88,21 @@ def get_user(email):
 
 def create_user(email, password, name, phone, address, role):
     try:
+        # Validate inputs
+        if not password or not isinstance(password, str) or len(password.strip()) == 0:
+            logger.error("Invalid password provided")
+            return False
+        
         user_data = {
             'email': email,
-            'password': generate_password_hash(password),
+            'password': generate_password_hash(password.strip()),
             'name': name,
-            'phone': phone,
-            'address': address,
+            'phone': phone or '',
+            'address': address or '',
             'role': role,
             'created_at': datetime.now().isoformat()
         }
+        
         users_table.put_item(
             Item=user_data,
             ConditionExpression='attribute_not_exists(email)'
@@ -107,6 +113,10 @@ def create_user(email, password, name, phone, address, role):
             return False
         logger.error(f"Error creating user {email}: {e}")
         return False
+    except Exception as e:
+        logger.error(f"Unexpected error creating user: {e}")
+        return False
+
 
 # Pickup Management
 def create_pickup(sender_email, pickup_address, delivery_address, package_details):
@@ -334,5 +344,6 @@ def logout():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
 
