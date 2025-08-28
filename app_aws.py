@@ -175,6 +175,125 @@ def update_pickup_status(pickup_id, status, agent_email=None):
         logger.error(f"Error updating pickup status: {e}")
         return False
 
+# Add these functions right after your helper functions
+
+def get_user_by_email(email):
+    """Get user by email from DynamoDB users table"""
+    try:
+        response = users_table.get_item(Key={'email': email})
+        return deserialize_item(response.get('Item'))
+    except ClientError as e:
+        logger.error(f"Error getting user {email}: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error getting user {email}: {e}")
+        return None
+
+def get_delivery_agent_by_email(email):
+    """Get delivery agent by email from DynamoDB agents table"""
+    try:
+        response = delivery_agents_table.get_item(Key={'email': email})
+        return deserialize_item(response.get('Item'))
+    except ClientError as e:
+        logger.error(f"Error getting delivery agent {email}: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error getting delivery agent {email}: {e}")
+        return None
+
+def create_user(email, password, name, phone, address, role):
+    """Create user in DynamoDB users table"""
+    try:
+        # Validate inputs
+        if not password or not isinstance(password, str) or len(password.strip()) == 0:
+            logger.error("Invalid password provided")
+            return False
+        
+        user_data = {
+            'email': email,
+            'password': generate_password_hash(password.strip()),
+            'name': name,
+            'phone': phone or '',
+            'address': address or '',
+            'role': role,
+            'created_at': datetime.now().isoformat()
+        }
+        
+        users_table.put_item(
+            Item=user_data,
+            ConditionExpression='attribute_not_exists(email)'
+        )
+        logger.info(f"User created successfully: {email}")
+        return True
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            logger.warning(f"User already exists: {email}")
+            return False
+        logger.error(f"Error creating user {email}: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error creating user {email}: {e}")
+        return False
+
+def create_delivery_agent(email, password, name, phone, status='available'):
+    """Create delivery agent in DynamoDB agents table"""
+    try:
+        # Validate inputs
+        if not password or not isinstance(password, str) or len(password.strip()) == 0:
+            logger.error("Invalid password provided")
+            return False
+        
+        agent_data = {
+            'email': email,
+            'password': generate_password_hash(password.strip()),
+            'name': name,
+            'phone': phone or '',
+            'status': status,
+            'assigned_deliveries': [],
+            'created_at': datetime.now().isoformat()
+        }
+        
+        delivery_agents_table.put_item(
+            Item=agent_data,
+            ConditionExpression='attribute_not_exists(email)'
+        )
+        logger.info(f"Delivery agent created successfully: {email}")
+        return True
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            logger.warning(f"Agent already exists: {email}")
+            return False
+        logger.error(f"Error creating agent {email}: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error creating agent {email}: {e}")
+        return False
+
+def generate_id(prefix=""):
+    """Generate unique ID with optional prefix"""
+    return prefix + str(uuid.uuid4().hex)[:8]
+
+def get_current_datetime():
+    """Get current datetime as string"""
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+def create_notification(user_id, message, type="info"):
+    """Create notification and send via SNS"""
+    notification = {
+        "id": generate_id("notif_"),
+        "user_id": user_id,
+        "message": message,
+        "type": type,
+        "created_at": get_current_datetime(),
+        "read": False
+    }
+    
+    # Send SNS notification
+    send_notification(f"CourierBuddy: {message}", "CourierBuddy Notification")
+    
+    return notification
+
+
 # Flask Routes (sample)
 @app.route('/')
 def index():
@@ -344,6 +463,7 @@ def logout():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
 
 
