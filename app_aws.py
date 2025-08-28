@@ -180,14 +180,36 @@ def update_pickup_status(pickup_id, status, agent_email=None):
 def get_user_by_email(email):
     """Get user by email from DynamoDB users table"""
     try:
+        # Validate email input
+        if not email or not isinstance(email, str) or email.strip() == '':
+            logger.error(f"Invalid email provided: {repr(email)}")
+            return None
+        
+        # Clean email
+        email = email.strip().lower()
+        logger.info(f"Looking up user: {email}")
+        
+        # Get item from DynamoDB
         response = users_table.get_item(Key={'email': email})
-        return deserialize_item(response.get('Item'))
+        
+        if 'Item' in response:
+            logger.info(f"User found: {email}")
+            return deserialize_item(response['Item'])
+        else:
+            logger.info(f"User not found: {email}")
+            return None
+            
     except ClientError as e:
-        logger.error(f"Error getting user {email}: {e}")
+        error_code = e.response['Error']['Code']
+        if error_code == 'ValidationException':
+            logger.error(f"DynamoDB validation error for email '{email}': {e}")
+        else:
+            logger.error(f"AWS error getting user {email}: {e}")
         return None
     except Exception as e:
         logger.error(f"Unexpected error getting user {email}: {e}")
         return None
+
 
 def get_delivery_agent_by_email(email):
     """Get delivery agent by email from DynamoDB agents table"""
@@ -402,18 +424,87 @@ def signup():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        data = request.form
-        email = data.get('email')
-        password = data.get('password')
-        user = get_user(email)
-        if user and check_password_hash(user['password'], password):
-            session['email'] = email
-            session['role'] = user['role']
-            session['name'] = user['name']
-            flash('Login successful', 'success')
-            return redirect(url_for('dashboard'))
-        else:
-            flash('Invalid credentials', 'error')
+        try:
+            # Handle both JSON and form data
+            if request.is_json:
+                data = request.get_json()
+                logger.info(f"Received JSON login data: {data}")
+            else:
+                data = request.form
+                logger.info(f"Received form login data: {dict(data)}")
+            
+            # Extract and validate email/password with None checking
+            email = data.get('email') if data else None
+            password = data.get('password') if data else None
+            
+            # Log what we received (for debugging)
+            logger.info(f"Login attempt - email: {email}, password: {'***' if password else 'None'}")
+            
+            # Validate email is not None/empty
+            if not email or str(email).strip() == '':
+                error_msg = 'Please enter your email address.'
+                if request.is_json:
+                    return jsonify({'success': False, 'message': error_msg}), 400
+                flash(error_msg, 'error')
+                return render_template('login.html')
+            
+            # Validate password is not None/empty
+            if not password or str(password).strip() == '':
+                error_msg = 'Please enter your password.'
+                if request.is_json:
+                    return jsonify({'success': False, 'message': error_msg}), 400
+                flash(error_msg, 'error')
+                return render_template('login.html')
+            
+            # Clean the email
+            email = str(email).strip().lower()
+            password = str(password).strip()
+            
+            # Check in users table
+            user = get_user_by_email(email)
+            if user and check_password_hash(user['password'], password):
+                session['user_id'] = email
+                session['role'] = user['role']
+                session['name'] = user['name']
+                
+                success_msg = f'Welcome back, {user["name"]}!'
+                
+                if request.is_json:
+                    return jsonify({'success': True, 'role': user['role'], 'message': success_msg})
+                
+                flash(success_msg, 'success')
+                return redirect(url_for('dashboard'))
+            
+            # Check in delivery agents table
+            agent = get_delivery_agent_by_email(email)
+            if agent and check_password_hash(agent['password'], password):
+                session['user_id'] = email
+                session['role'] = 'courier'
+                session['name'] = agent['name']
+                
+                success_msg = f'Welcome back, {agent["name"]}!'
+                
+                if request.is_json:
+                    return jsonify({'success': True, 'role': 'courier', 'message': success_msg})
+                
+                flash(success_msg, 'success')
+                return redirect(url_for('dashboard'))
+            
+            # Login failed
+            error_msg = 'Invalid email or password.'
+            if request.is_json:
+                return jsonify({'success': False, 'message': error_msg}), 401
+            flash(error_msg, 'error')
+            return render_template('login.html')
+            
+        except Exception as e:
+            logger.error(f"Login error: {e}")
+            error_msg = 'An error occurred during login. Please try again.'
+            if request.is_json:
+                return jsonify({'success': False, 'message': error_msg}), 500
+            flash(error_msg, 'error')
+            return render_template('login.html')
+    
     return render_template('login.html')
 
 @app.route('/dashboard')
@@ -463,6 +554,7 @@ def logout():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
 
 
