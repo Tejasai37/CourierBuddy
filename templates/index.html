@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CourierBuddy - Local Courier Scheduling Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>CourierBuddy</h2>
+            </div>
+            <div class="nav-menu">
+                <a href="{{ url_for('login') }}" class="btn btn--outline btn--sm">Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Landing Page -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="hero-content">
+                <h1>CourierBuddy</h1>
+                <p class="hero-subtitle">Local Courier Scheduling and Delivery Tracking Platform</p>
+                <p class="hero-description">Connect with nearby delivery agents for swift, secure, and trackable parcel movement.</p>
+                <div class="hero-actions">
+                    <a href="{{ url_for('login') }}" class="btn btn--primary btn--large">Login</a>
+                    <a href="{{ url_for('signup') }}" class="btn btn--secondary btn--large">Sign Up</a>
+                </div>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📦</div>
+                    <h3>Easy Scheduling</h3>
+                    <p>Schedule pickup requests with detailed delivery information</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📍</div>
+                    <h3>Real-time Tracking</h3>
+                    <p>Track your deliveries from pickup to destination</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚚</div>
+                    <h3>Reliable Agents</h3>
+                    <p>Connect with verified local delivery agents</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast">
+        <span id="toast-message"></span>
+        <button onclick="hideToast()">&times;</button>
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts/app.js') }}"></script>
+</body>
+</html>

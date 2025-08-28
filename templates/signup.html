@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - CourierBuddy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="{{ url_for('index') }}"><h2>CourierBuddy</h2></a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Signup Page -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-container">
+                <div class="card">
+                    <div class="card__header">
+                        <h2>Create Your Account</h2>
+                        <p>Join CourierBuddy to start scheduling deliveries</p>
+                    </div>
+                    <div class="card__body">
+                        <form id="signup-form" onsubmit="handleSignup(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="signup-name" placeholder="Enter your full name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Phone Number</label>
+                                    <input type="tel" class="form-control" id="signup-phone" placeholder="Enter your phone" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="signup-email" placeholder="Enter your email" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Address</label>
+                                <textarea class="form-control" id="signup-address" rows="2" placeholder="Enter your address" required></textarea>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="signup-password" placeholder="Create a password" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Account Type</label>
+                                    <select class="form-control" id="signup-role" required>
+                                        <option value="">Select Role</option>
+                                        <option value="user">User/Sender</option>
+                                        <option value="courier">Delivery Agent</option>
+                                        <option value="admin">Administrator</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn--primary btn--full-width">Create Account</button>
+                        </form>
+                        <div class="auth-footer">
+                            <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+                            <p><a href="{{ url_for('index') }}">← Back to Home</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast">
+        <span id="toast-message"></span>
+        <button onclick="hideToast()">&times;</button>
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts/app.js') }}"></script>
+</body>
+</html>

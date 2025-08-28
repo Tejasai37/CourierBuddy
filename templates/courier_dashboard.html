@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Courier Dashboard - CourierBuddy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>CourierBuddy</h2>
+            </div>
+            <div class="nav-menu">
+                <span class="user-greeting">Welcome, {{ session.name }}!</span>
+                <a href="{{ url_for('logout') }}" class="btn btn--outline btn--sm">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Content -->
+    <div class="dashboard-container">
+        <div class="container">
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <h1>Courier Dashboard</h1>
+                <div class="status-indicator">
+                    <span class="status-dot status-available"></span>
+                    <span>Available for deliveries</span>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-content">
+                        <h3>{{ assigned_requests|length }}</h3>
+                        <p>Assigned Tasks</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔄</div>
+                    <div class="stat-content">
+                        <h3>{{ available_requests|length }}</h3>
+                        <p>Available</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🚚</div>
+                    <div class="stat-content">
+                        <h3>{{ assigned_requests.values()|selectattr('status', 'equalto', 'in_transit')|list|length }}</h3>
+                        <p>In Transit</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <h3>{{ assigned_requests.values()|selectattr('status', 'equalto', 'delivered')|list|length }}</h3>
+                        <p>Completed</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Grid -->
+            <div class="dashboard-grid">
+                <!-- Assigned Tasks -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h2>My Assigned Tasks</h2>
+                    </div>
+                    <div class="tasks-list">
+                        {% if assigned_requests %}
+                            {% for req_id, request in assigned_requests.items() %}
+                            <div class="task-card">
+                                <div class="task-header">
+                                    <span class="task-id">#{{ req_id }}</span>
+                                    <span class="status-badge status-{{ request.status }}">{{ request.status.replace('_', ' ').title() }}</span>
+                                </div>
+                                <div class="task-body">
+                                    <div class="task-route">
+                                        <div class="route-point">
+                                            <span class="route-icon">📍</span>
+                                            <div>
+                                                <p class="route-label">Pickup</p>
+                                                <p class="route-address">{{ request.pickup_address }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="route-arrow">→</div>
+                                        <div class="route-point">
+                                            <span class="route-icon">🎯</span>
+                                            <div>
+                                                <p class="route-label">Delivery</p>
+                                                <p class="route-address">{{ request.delivery_address }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="package-details"><strong>Package:</strong> {{ request.package_details }}</p>
+                                    <p class="task-date">Assigned: {{ request.updated_at }}</p>
+                                </div>
+                                <div class="task-actions">
+                                    <button class="btn btn--sm btn--primary" onclick="openTaskModal('{{ req_id }}')">Update Status</button>
+                                    <a href="{{ url_for('track_delivery', request_id=req_id) }}" class="btn btn--sm btn--outline">View Details</a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <div class="empty-icon">📋</div>
+                                <h3>No assigned tasks</h3>
+                                <p>Check available requests to accept new deliveries</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Available Requests -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h2>Available Requests</h2>
+                    </div>
+                    <div class="requests-list">
+                        {% if available_requests %}
+                            {% for req_id, request in available_requests.items() %}
+                            <div class="request-card">
+                                <div class="request-header">
+                                    <span class="request-id">#{{ req_id }}</span>
+                                    <span class="status-badge status-pending">Pending</span>
+                                </div>
+                                <div class="request-body">
+                                    <div class="request-route">
+                                        <div class="route-point">
+                                            <span class="route-icon">📍</span>
+                                            <div>
+                                                <p class="route-label">Pickup</p>
+                                                <p class="route-address">{{ request.pickup_address }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="route-arrow">→</div>
+                                        <div class="route-point">
+                                            <span class="route-icon">🎯</span>
+                                            <div>
+                                                <p class="route-label">Delivery</p>
+                                                <p class="route-address">{{ request.delivery_address }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="package-details"><strong>Package:</strong> {{ request.package_details }}</p>
+                                    <p class="request-date">Created: {{ request.created_at }}</p>
+                                </div>
+                                <div class="request-actions">
+                                    <button class="btn btn--sm btn--primary" onclick="assignRequest('{{ req_id }}')">Accept Task</button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <div class="empty-icon">🔄</div>
+                                <h3>No available requests</h3>
+                                <p>New delivery requests will appear here</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Details Modal -->
+    <div id="task-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Update Task Status</h3>
+                <button class="modal-close" onclick="closeTaskModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="task-details"></div>
+                <div class="status-update-section">
+                    <label class="form-label">Update Status:</label>
+                    <select id="status-update" class="form-control">
+                        <option value="assigned">Assigned</option>
+                        <option value="picked_up">Picked Up</option>
+                        <option value="in_transit">In Transit</option>
+                        <option value="delivered">Delivered</option>
+                    </select>
+                    <button class="btn btn--primary" onclick="updateTaskStatus()">Update Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast">
+        <span id="toast-message"></span>
+        <button onclick="hideToast()">&times;</button>
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts/app.js') }}"></script>
+</body>
+</html>
+<!DOCTYPE html>

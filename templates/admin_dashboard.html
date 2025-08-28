@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - CourierBuddy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>CourierBuddy Admin</h2>
+            </div>
+            <div class="nav-menu">
+                <span class="user-greeting">Welcome, {{ session.name }}!</span>
+                <a href="{{ url_for('logout') }}" class="btn btn--outline btn--sm">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Content -->
+    <div class="dashboard-container">
+        <div class="container">
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <h1>Admin Dashboard</h1>
+                <div class="admin-actions">
+                    <button class="btn btn--primary" onclick="refreshStats()">
+                        <span class="btn-icon">🔄</span>
+                        Refresh Stats
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-content">
+                        <h3>{{ stats.total_users }}</h3>
+                        <p>Total Users</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🚚</div>
+                    <div class="stat-content">
+                        <h3>{{ stats.total_agents }}</h3>
+                        <p>Delivery Agents</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-content">
+                        <h3>{{ stats.total_requests }}</h3>
+                        <p>Total Requests</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-content">
+                        <h3>{{ stats.pending_requests }}</h3>
+                        <p>Pending Requests</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <h3>{{ stats.delivered_requests }}</h3>
+                        <p>Completed</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Management Sections -->
+            <div class="admin-sections">
+                <!-- Users Management -->
+                <div class="admin-section">
+                    <div class="section-header">
+                        <h2>User Management</h2>
+                        <span class="section-count">{{ users|length }} users</span>
+                    </div>
+                    <div class="data-table">
+                        <div class="table-header">
+                            <div class="table-cell">Name</div>
+                            <div class="table-cell">Email</div>
+                            <div class="table-cell">Role</div>
+                            <div class="table-cell">Phone</div>
+                            <div class="table-cell">Actions</div>
+                        </div>
+                        {% for user_id, user in users.items() %}
+                        <div class="table-row">
+                            <div class="table-cell">{{ user.name }}</div>
+                            <div class="table-cell">{{ user.email }}</div>
+                            <div class="table-cell">
+                                <span class="role-badge role-{{ user.role }}">{{ user.role.title() }}</span>
+                            </div>
+                            <div class="table-cell">{{ user.phone }}</div>
+                            <div class="table-cell">
+                                <button class="btn btn--sm btn--outline" onclick="viewUser('{{ user_id }}')">View</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Agents Management -->
+                <div class="admin-section">
+                    <div class="section-header">
+                        <h2>Agent Management</h2>
+                        <span class="section-count">{{ agents|length }} agents</span>
+                    </div>
+                    <div class="data-table">
+                        <div class="table-header">
+                            <div class="table-cell">Name</div>
+                            <div class="table-cell">Email</div>
+                            <div class="table-cell">Phone</div>
+                            <div class="table-cell">Status</div>
+                            <div class="table-cell">Assigned</div>
+                            <div class="table-cell">Actions</div>
+                        </div>
+                        {% for agent_id, agent in agents.items() %}
+                        <div class="table-row">
+                            <div class="table-cell">{{ agent.name }}</div>
+                            <div class="table-cell">{{ agent.email }}</div>
+                            <div class="table-cell">{{ agent.phone }}</div>
+                            <div class="table-cell">
+                                <span class="status-badge status-{{ agent.status }}">{{ agent.status.title() }}</span>
+                            </div>
+                            <div class="table-cell">{{ agent.assigned_deliveries|length }}</div>
+                            <div class="table-cell">
+                                <button class="btn btn--sm btn--outline" onclick="viewAgent('{{ agent_id }}')">View</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Requests Management -->
+                <div class="admin-section">
+                    <div class="section-header">
+                        <h2>All Requests</h2>
+                        <span class="section-count">{{ requests|length }} requests</span>
+                    </div>
+                    <div class="requests-grid">
+                        {% for req_id, request in requests.items() %}
+                        <div class="request-card admin-request">
+                            <div class="request-header">
+                                <span class="request-id">#{{ req_id }}</span>
+                                <span class="status-badge status-{{ request.status }}">{{ request.status.replace('_', ' ').title() }}</span>
+                            </div>
+                            <div class="request-body">
+                                <div class="request-info">
+                                    <p><strong>From:</strong> {{ request.pickup_address }}</p>
+                                    <p><strong>To:</strong> {{ request.delivery_address }}</p>
+                                    <p><strong>Package:</strong> {{ request.package_details }}</p>
+                                    <p><strong>Created:</strong> {{ request.created_at }}</p>
+                                    {% if request.assigned_agent %}
+                                    <p><strong>Agent:</strong> {{ agents[request.assigned_agent].name if request.assigned_agent in agents else 'Unknown' }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="request-actions">
+                                <button class="btn btn--sm btn--outline" onclick="viewRequest('{{ req_id }}')">Details</button>
+                                {% if request.status != 'delivered' and request.status != 'cancelled' %}
+                                <button class="btn btn--sm btn--primary" onclick="openAdminStatusModal('{{ req_id }}')">Update</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Status Update Modal -->
+    <div id="admin-status-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Update Request Status</h3>
+                <button class="modal-close" onclick="closeAdminStatusModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="admin-request-details"></div>
+                <div class="status-update-section">
+                    <label class="form-label">New Status:</label>
+                    <select id="admin-status-update" class="form-control">
+                        <option value="pending">Pending</option>
+                        <option value="assigned">Assigned</option>
+                        <option value="picked_up">Picked Up</option>
+                        <option value="in_transit">In Transit</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                    <button class="btn btn--primary" onclick="updateAdminStatus()">Update Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast">
+        <span id="toast-message"></span>
+        <button onclick="hideToast()">&times;</button>
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts/app.js') }}"></script>
+</body>
+</html>

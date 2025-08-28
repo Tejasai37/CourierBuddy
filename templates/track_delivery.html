@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Delivery - CourierBuddy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="{{ url_for('user_dashboard') }}"><h2>CourierBuddy</h2></a>
+            </div>
+            <div class="nav-menu">
+                <span class="user-greeting">Welcome, {{ session.name }}!</span>
+                <a href="{{ url_for('logout') }}" class="btn btn--outline btn--sm">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Tracking Content -->
+    <div class="tracking-container">
+        <div class="container">
+            <div class="tracking-header">
+                <h1>Track Your Delivery</h1>
+                <div class="tracking-id">Request ID: <span class="highlight">#{{ request.id }}</span></div>
+                <a href="{{ url_for('user_dashboard') }}" class="btn btn--outline btn--sm">← Back to Dashboard</a>
+            </div>
+
+            <!-- Delivery Status -->
+            <div class="status-section">
+                <div class="status-card">
+                    <div class="status-header">
+                        <h2>Current Status</h2>
+                        <span class="status-badge status-{{ request.status }} status-large">
+                            {{ request.status.replace('_', ' ').title() }}
+                        </span>
+                    </div>
+                    
+                    <!-- Status Timeline -->
+                    <div class="status-timeline">
+                        <div class="timeline-item {% if request.status in ['pending', 'assigned', 'picked_up', 'in_transit', 'delivered'] %}completed{% endif %}">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <h4>Request Created</h4>
+                                <p>{{ request.created_at }}</p>
+                                <small>Your pickup request has been submitted</small>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item {% if request.status in ['assigned', 'picked_up', 'in_transit', 'delivered'] %}completed{% endif %}">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <h4>Agent Assigned</h4>
+                                {% if request.assigned_agent %}
+                                <p>{{ request.updated_at }}</p>
+                                <small>Delivery agent has been assigned to your request</small>
+                                {% else %}
+                                <p>Pending...</p>
+                                <small>Waiting for agent assignment</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item {% if request.status in ['picked_up', 'in_transit', 'delivered'] %}completed{% endif %}">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <h4>Package Picked Up</h4>
+                                {% if request.status in ['picked_up', 'in_transit', 'delivered'] %}
+                                <p>{{ request.updated_at }}</p>
+                                <small>Package has been collected from pickup location</small>
+                                {% else %}
+                                <p>Pending...</p>
+                                <small>Agent will collect the package</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item {% if request.status in ['in_transit', 'delivered'] %}completed{% endif %}">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <h4>In Transit</h4>
+                                {% if request.status in ['in_transit', 'delivered'] %}
+                                <p>{{ request.updated_at }}</p>
+                                <small>Package is on the way to destination</small>
+                                {% else %}
+                                <p>Pending...</p>
+                                <small>Package will be dispatched after pickup</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item {% if request.status == 'delivered' %}completed{% endif %}">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <h4>Delivered</h4>
+                                {% if request.status == 'delivered' %}
+                                <p>{{ request.updated_at }}</p>
+                                <small>Package successfully delivered!</small>
+                                {% else %}
+                                <p>Pending...</p>
+                                <small>Package will be delivered to recipient</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Details -->
+            <div class="details-section">
+                <div class="details-grid">
+                    <!-- Pickup Information -->
+                    <div class="detail-card">
+                        <div class="card-header">
+                            <h3>📍 Pickup Details</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="detail-item">
+                                <span class="detail-label">Address:</span>
+                                <span class="detail-value">{{ request.pickup_address }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Requested:</span>
+                                <span class="detail-value">{{ request.created_at }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delivery Information -->
+                    <div class="detail-card">
+                        <div class="card-header">
+                            <h3>🎯 Delivery Details</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="detail-item">
+                                <span class="detail-label">Address:</span>
+                                <span class="detail-value">{{ request.delivery_address }}</span>
+                            </div>
+                            {% if request.estimated_delivery %}
+                            <div class="detail-item">
+                                <span class="detail-label">Expected:</span>
+                                <span class="detail-value">{{ request.estimated_delivery }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Package Information -->
+                    <div class="detail-card">
+                        <div class="card-header">
+                            <h3>📦 Package Details</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="detail-item">
+                                <span class="detail-label">Description:</span>
+                                <span class="detail-value">{{ request.package_details }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Last Updated:</span>
+                                <span class="detail-value">{{ request.updated_at }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Agent Information -->
+                    {% if request.assigned_agent %}
+                    <div class="detail-card">
+                        <div class="card-header">
+                            <h3>🚚 Delivery Agent</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="detail-item">
+                                <span class="detail-label">Agent:</span>
+                                <span class="detail-value">Assigned</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Status:</span>
+                                <span class="detail-value">Active</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="tracking-actions">
+                <button class="btn btn--outline" onclick="window.location.reload()">
+                    <span class="btn-icon">🔄</span>
+                    Refresh Status
+                </button>
+                {% if request.status != 'delivered' and request.status != 'cancelled' %}
+                <button class="btn btn--secondary" onclick="showContactSupport()">
+                    <span class="btn-icon">💬</span>
+                    Contact Support
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Support Modal -->
+    <div id="support-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Contact Support</h3>
+                <button class="modal-close" onclick="closeSupportModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>If you need assistance with your delivery, please contact our support team:</p>
+                <div class="support-info">
+                    <div class="support-item">
+                        <strong>📞 Phone:</strong> +91-1234567890
+                    </div>
+                    <div class="support-item">
+                        <strong>✉️ Email:</strong> support@courierbuddy.com
+                    </div>
+                    <div class="support-item">
+                        <strong>🆔 Request ID:</strong> {{ request.id }}
+                    </div>
+                </div>
+                <p><small>Please have your request ID ready when contacting support.</small></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast">
+        <span id="toast-message"></span>
+        <button onclick="hideToast()">&times;</button>
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts/app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Pickup - CourierBuddy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="{{ url_for('user_dashboard') }}"><h2>CourierBuddy</h2></a>
+            </div>
+            <div class="nav-menu">
+                <span class="user-greeting">Welcome, {{ session.name }}!</span>
+                <a href="{{ url_for('logout') }}" class="btn btn--outline btn--sm">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Schedule Pickup Form -->
+    <div class="form-container">
+        <div class="container">
+            <div class="form-header">
+                <h1>Schedule New Pickup</h1>
+                <p>Fill in the details below to schedule your delivery</p>
+                <a href="{{ url_for('user_dashboard') }}" class="btn btn--outline btn--sm">← Back to Dashboard</a>
+            </div>
+
+            <div class="form-card">
+                <form id="pickup-form" onsubmit="handleSchedulePickup(event)">
+                    <div class="form-section">
+                        <h3>📍 Pickup Information</h3>
+                        <div class="form-group">
+                            <label class="form-label">Pickup Address</label>
+                            <textarea class="form-control" id="pickup-address" rows="3" placeholder="Enter complete pickup address including landmarks" required></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Contact Person</label>
+                                <input type="text" class="form-control" id="pickup-contact" placeholder="Name of person at pickup location">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Contact Phone</label>
+                                <input type="tel" class="form-control" id="pickup-phone" placeholder="Phone number for pickup">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>🎯 Delivery Information</h3>
+                        <div class="form-group">
+                            <label class="form-label">Delivery Address</label>
+                            <textarea class="form-control" id="delivery-address" rows="3" placeholder="Enter complete delivery address including landmarks" required></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Recipient Name</label>
+                                <input type="text" class="form-control" id="delivery-contact" placeholder="Name of recipient">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Recipient Phone</label>
+                                <input type="tel" class="form-control" id="delivery-phone" placeholder="Phone number of recipient">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>📦 Package Details</h3>
+                        <div class="form-group">
+                            <label class="form-label">Package Description</label>
+                            <textarea class="form-control" id="package-details" rows="3" placeholder="Describe the package (type, size, weight, special instructions)" required></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Package Value (Optional)</label>
+                                <input type="number" class="form-control" id="package-value" placeholder="Estimated value in ₹">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Delivery Priority</label>
+                                <select class="form-control" id="delivery-priority">
+                                    <option value="standard">Standard (Same day)</option>
+                                    <option value="express">Express (2-4 hours)</option>
+                                    <option value="urgent">Urgent (1 hour)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>⏰ Timing Preferences</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Preferred Pickup Time</label>
+                                <select class="form-control" id="pickup-time">
+                                    <option value="morning">Morning (9 AM - 12 PM)</option>
+                                    <option value="afternoon">Afternoon (12 PM - 4 PM)</option>
+                                    <option value="evening">Evening (4 PM - 8 PM)</option>
+                                    <option value="anytime">Any Time</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Expected Delivery Date</label>
+                                <input type="date" class="form-control" id="expected-delivery" min="{{ today }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>💬 Additional Instructions</h3>
+                        <div class="form-group">
+                            <label class="form-label">Special Instructions (Optional)</label>
+                            <textarea class="form-control" id="special-instructions" rows="3" placeholder="Any special handling instructions, delivery notes, or other requirements"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn--outline" onclick="window.history.back()">Cancel</button>
+                        <button type="submit" class="btn btn--primary btn--large">
+                            <span class="btn-icon">📦</span>
+                            Schedule Pickup
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast">
+        <span id="toast-message"></span>
+        <button onclick="hideToast()">&times;</button>
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts/app.js') }}"></script>
+</body>
+</html>
